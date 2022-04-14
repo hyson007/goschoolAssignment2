@@ -9,4 +9,6 @@ there is a slice in each of the Node, which stores the schedules in the same exa
 in other venues.
 
 
+API is published at https://goschoolassignment2.onrender.com
+
 

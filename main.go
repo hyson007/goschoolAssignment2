@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/hyson007/GoSchoolAssignMent2/bst"
+	cors "github.com/rs/cors/wrapper/gin"
 )
 
 var (
@@ -57,6 +58,7 @@ func main() {
 
 	// data.PrintLevelOrder()
 	r := gin.Default()
+	r.Use(cors.Default())
 	r.POST("/singledatehour", func(c *gin.Context) {
 		var json struct {
 			DateHour int    `json:"dateHour" binding:"required"`
@@ -261,6 +263,7 @@ func main() {
 			})
 			return
 		} else {
+			fmt.Println("hit", startInt, endInt)
 			result := data.SearchRangeDateHour(startInt, endInt)
 			c.JSON(200, gin.H{
 				"message": result,
