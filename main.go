@@ -5,10 +5,11 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/hyson007/GoSchoolAssignMent2/bst"
-	cors "github.com/rs/cors/wrapper/gin"
 )
 
 var (
@@ -45,8 +46,8 @@ func init() {
 	data.AddNode(2022041710, "South", "IronMan")
 	data.AddNode(2022041710, "East", "IronMan")
 	data.AddNode(2022041910, "East", "Avenger")
-	data.AddNode(2022042010, "Downtown", "CaptainAmerica")
-	data.AddNode(2022041810, "Downtown", "CaptainAmerica")
+	data.AddNode(2022042010, "DownTown", "CaptainAmerica")
+	data.AddNode(2022041810, "DownTown", "CaptainAmerica")
 	data.AddNode(2022041810, "South", "GolangMovie")
 }
 
@@ -58,20 +59,30 @@ func main() {
 
 	// data.PrintLevelOrder()
 	r := gin.Default()
-	r.Use(cors.Default())
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"POST", "GET", "DELETE", "PUT"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "ContentType"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		AllowOriginFunc: func(origin string) bool {
+			return origin == "*"
+		},
+		MaxAge: 12 * time.Hour,
+	}))
+	// r.Use(cors.Default())
 	r.POST("/singledatehour", func(c *gin.Context) {
 		var json struct {
 			DateHour int    `json:"dateHour" binding:"required"`
 			Venue    string `json:"venue" binding:"required"`
 			Movie    string `json:"movie" binding:"required"`
 		}
-		if c.Bind(&json) == nil {
+		if err := c.Bind(&json); err == nil {
 			// fmt.Println(json)
-
-			// check if venue and movies are in the list
+			// check if venue and movies are in	 the list
 			if json.Venue != "" {
 
-				fmt.Println(venues, json.Venue)
+				// fmt.Println(venues, json.Venue)
 				res := checkInList(venues, json.Venue)
 				if !res {
 					c.JSON(400, gin.H{
@@ -99,13 +110,17 @@ func main() {
 				return
 			}
 			c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		} else {
+			c.JSON(400, gin.H{
+				"error": err.Error(),
+			})
 		}
 	})
 
 	r.PUT("/singledatehour/:dh", func(c *gin.Context) {
 		dateHour, err := strconv.Atoi(c.Param("dh"))
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"status": "bad request"})
+			c.JSON(http.StatusBadRequest, gin.H{"status": "bad request, dateHour must be an integer"})
 			return
 		}
 
@@ -121,11 +136,11 @@ func main() {
 			Venue    string `json:"newvenue" binding:"required"`
 			Movie    string `json:"newmovie" binding:"required"`
 		}
-		if c.Bind(&json) == nil {
+		if err := c.Bind(&json); err == nil {
 			//check if the new venue and movie are in the list
 			if json.Venue != "" {
 
-				fmt.Println(venues, json.Venue)
+				// fmt.Println(venues, json.Venue)
 				res := checkInList(venues, json.Venue)
 				if !res {
 					c.JSON(400, gin.H{
@@ -145,10 +160,22 @@ func main() {
 				}
 			}
 
+			shouldNotExist := data.SearchSingleDateHour(json.DateHour).ByVenue(json.Venue).ByMovie(json.Movie)
+			fmt.Println(*shouldNotExist, "hit")
+			fmt.Println(*shouldNotExist != nil)
+			if *shouldNotExist != nil {
+				c.JSON(400, gin.H{
+					"error": "the new venue and movie already exist in the target datehour",
+				})
+				return
+			}
+
 			// check if newdatehour is same as the old one
 			if dateHour == json.DateHour {
 
 				// same datehour, we proceed to update the venue or movies
+				// first, let's check there should be no other item with the
+				// same venue and movie already in the target datehour
 				item := data.SearchSingleDateHour(dateHour).ByVenue(venue).ByMovie(movie)
 				err := item.ModifyMovieOrVenue(json.Movie, json.Venue)
 				if err != nil {
@@ -164,8 +191,14 @@ func main() {
 					log.Println(err)
 					c.JSON(http.StatusBadRequest, gin.H{"status": "something wrong with the modify"})
 					return
+				} else {
+					c.JSON(http.StatusOK, gin.H{"status": "ok"})
 				}
 			}
+		} else {
+			c.JSON(400, gin.H{
+				"error": err.Error(),
+			})
 		}
 	})
 
@@ -175,7 +208,23 @@ func main() {
 			c.JSON(http.StatusBadRequest, gin.H{"status": "bad request"})
 			return
 		}
-		err = data.RemoveDateHour(dateHour)
+		venue := c.Query("venue")
+		movie := c.Query("movie")
+
+		if venue != "" && movie != "" {
+			//calling from web should hit this
+			// fmt.Println("hit from web", venue, movie)
+			err := data.RemoveOneEntry(dateHour, venue, movie)
+			if err != nil {
+				log.Println(err)
+				c.JSON(http.StatusBadRequest,
+					gin.H{"status": "something wrong with the delete one entry"})
+				return
+			}
+
+		} else {
+			err = data.RemoveDateHour(dateHour)
+		}
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"status": "dateHour not found"})
 			return
@@ -263,7 +312,7 @@ func main() {
 			})
 			return
 		} else {
-			fmt.Println("hit", startInt, endInt)
+			// fmt.Println("hit", startInt, endInt)
 			result := data.SearchRangeDateHour(startInt, endInt)
 			c.JSON(200, gin.H{
 				"message": result,

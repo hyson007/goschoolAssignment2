@@ -146,6 +146,10 @@ func (d *Bst) searchRangeHelper(node *Node, start, end int, res *NodeList) {
 }
 
 func (d *Bst) AddNode(da int, ve, mo string) error {
+	if da < 1900010100 || da > 2999123100 {
+		return errors.New("date hour out of range")
+	}
+
 	if d.Root == nil {
 		temp := Schedule{da, ve, mo}
 		tempSlice := NodeList{&temp}
@@ -212,7 +216,11 @@ func (d *Bst) ModifyDateHour(oldDate, newDate int,
 		if err != nil {
 			return err
 		}
-		d.AddNode(newDate, newVenue, newMovie)
+		err = d.AddNode(newDate, newVenue, newMovie)
+
+		if err != nil {
+			return err
+		}
 		return nil
 	} else {
 		return errors.New("you must change the date")
@@ -313,7 +321,7 @@ func (d *Bst) removeHelper(node *Node, value int) (*Node, error) {
 
 func (d *Bst) RemoveOneEntry(date int, venue, movie string) error {
 	// tmp := d.Root
-	temp, err := d.removeOneEntryHelper(d.Root, date, movie, venue)
+	temp, err := d.removeOneEntryHelper(d.Root, date, venue, movie)
 	if err != nil {
 		return err
 	} else {
@@ -331,11 +339,12 @@ func (d *Bst) removeOneEntryHelper(node *Node, date int, venue, movie string) (*
 		var tempNode *Node
 		for i := range node.Same {
 			// fmt.Println("hit", node.Same[i], date, movie, venue, i)
+			// fmt.Println("wocao", node.Same[i].Movie, movie, node.Same[i].Movie == movie, i)
+			// fmt.Println("wocao", node.Same[i].Venue, venue, node.Same[i].Venue == venue, i)
 			if node.Same[i].Movie == movie && node.Same[i].Venue == venue {
-
+				// fmt.Println("hit", node.Same[i], date, movie, venue, i)
 				//check if the node to be removed is the first node in the slice
 				if i == 0 {
-
 					// check if the same slice has other nodes or not
 					if len(node.Same) == 1 {
 						// no other nodes in the same slice, we follow bst removal
@@ -386,13 +395,13 @@ func (d *Bst) removeOneEntryHelper(node *Node, date int, venue, movie string) (*
 		return node, fmt.Errorf("unable to find node in slice to remove")
 
 	} else if node.DateHour < date {
-		n, err := d.removeOneEntryHelper(node.Right, date, movie, venue)
+		n, err := d.removeOneEntryHelper(node.Right, date, venue, movie)
 		if err != nil {
 			return nil, err
 		}
 		node.Right = n
 	} else {
-		n, err := d.removeOneEntryHelper(node.Left, date, movie, venue)
+		n, err := d.removeOneEntryHelper(node.Left, date, venue, movie)
 		if err != nil {
 			return nil, err
 		}
