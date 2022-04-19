@@ -30,6 +30,25 @@ var (
 	data = bst.Bst{nil, 0}
 )
 
+func init() {
+	data.AddNode(2022041810, "North", "Spderman")
+	data.AddNode(2022041710, "South", "IronMan")
+	data.AddNode(2022041710, "East", "IronMan")
+	data.AddNode(2022041910, "East", "Avenger")
+	data.AddNode(2022042010, "DownTown", "CaptainAmerica")
+	data.AddNode(2022041810, "DownTown", "CaptainAmerica")
+	data.AddNode(2022041810, "South", "GolangMovie")
+	data.AddNode(2022042110, "DownTown", "CaptainAmerica")
+	data.AddNode(2022042210, "East", "CaptainAmerica")
+	data.AddNode(2022042310, "South", "CaptainAmerica")
+	data.AddNode(2022042410, "North", "Spderman")
+	data.AddNode(2022042510, "South", "CaptainAmerica")
+	data.AddNode(2022042610, "East", "Avenger")
+	data.AddNode(2022042710, "North", "CaptainAmerica")
+	data.AddNode(2022042810, "East", "IronMan")
+	data.AddNode(2022042910, "North", "CaptainAmerica")
+}
+
 func checkInList(list []string, value string) bool {
 	for _, v := range list {
 		// fmt.Println(v, value)
@@ -41,21 +60,7 @@ func checkInList(list []string, value string) bool {
 	return false
 }
 
-func init() {
-	data.AddNode(2022041810, "North", "Spderman")
-	data.AddNode(2022041710, "South", "IronMan")
-	data.AddNode(2022041710, "East", "IronMan")
-	data.AddNode(2022041910, "East", "Avenger")
-	data.AddNode(2022042010, "DownTown", "CaptainAmerica")
-	data.AddNode(2022041810, "DownTown", "CaptainAmerica")
-	data.AddNode(2022041810, "South", "GolangMovie")
-}
-
 func main() {
-
-	//TODO
-	// add logic to check when modify or add new movies, venues, etc.
-	// it should check again the two lists
 
 	// data.PrintLevelOrder()
 	r := gin.Default()
@@ -160,6 +165,7 @@ func main() {
 				}
 			}
 
+			// check the new dateHour, new venue and new movie do not exist in the tree
 			shouldNotExist := data.SearchSingleDateHour(json.DateHour).ByVenue(json.Venue).ByMovie(json.Movie)
 			fmt.Println(*shouldNotExist, "hit")
 			fmt.Println(*shouldNotExist != nil)
@@ -368,35 +374,6 @@ func main() {
 		}
 	})
 
-	// it doesn't make too much sense to do put for a list
-	// as we can just add or delete elements
-	// r.PUT("/venues/:venue", func(c *gin.Context) {
-	// 	venue := c.Param("venue")
-	// 	res := checkInList(venues, venue)
-	// 	if !res {
-	// 		c.JSON(400, gin.H{
-	// 			"error": "venue not found",
-	// 		})
-	// 		return
-	// 	}
-	// 	var json struct {
-	// 		NewVenue string `json:"newvenue" binding:"required"`
-	// 	}
-	// 	if err := c.Bind(&json); err == nil {
-	// 		for i, v := range venues {
-	// 			if v == venue {
-	// 				venues[i] = json.NewVenue
-	// 				c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	// 				return
-	// 			}
-	// 		}
-	// 	} else {
-	// 		c.JSON(400, gin.H{
-	// 			"error": err.Error(),
-	// 		})
-	// 	}
-	// })
-
 	r.GET("/movies", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": movies,
@@ -443,6 +420,18 @@ func main() {
 				return
 			}
 		}
+	})
+
+	r.GET("/balance", func(c *gin.Context) {
+		log.Println("before balance")
+		data.PrintLevelOrder()
+		data.BalanceTree()
+		log.Println("after balance")
+		data.PrintLevelOrder()
+
+		c.JSON(200, gin.H{
+			"message": "done",
+		})
 	})
 
 	r.Run()
@@ -503,6 +492,9 @@ func main() {
 	// data.AddNode(2022042218, "South", "captain3")
 	// data.AddNode(2022042010, "East", "wonder woman")
 	// data.PrintLevelOrder()
+	// data.BalanceTree()
+	// data.PrintLevelOrder()
+
 	// // data.RemoveDateHour(2022041810)
 	// // data.RemoveOneEntry(2022041910, "avenger", "East")
 	// fmt.Println("-----------")
@@ -513,7 +505,7 @@ func main() {
 	// t := data.SearchSingleDateHour(2022041810).ByVenue("Downtown")
 	// fmt.Println(t)
 	// foo := *t
-	// foo[0].Movie = "wocao"
+	// foo[0].Movie = "hit"
 	// (*t)[0] = nil
 	// fmt.Println(t)
 	// fmt.Println(data.SearchSingleDateHour(2022041810).ByVenue("Downtown"))

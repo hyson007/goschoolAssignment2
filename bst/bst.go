@@ -229,7 +229,7 @@ func (d *Bst) ModifyDateHour(oldDate, newDate int,
 
 func (d *Bst) PrintLevelOrder() {
 	// this is for troubleshooting purpose, print the nodes under tree from
-	// root level
+	// root level and traverse by each level
 
 	var queue []*Node
 	var level int
@@ -247,14 +247,14 @@ func (d *Bst) PrintLevelOrder() {
 				queue = append(queue, popNode.Left)
 				// there is no need to append same, as it's not a bst
 				// queue = append(queue, popNode.Same...)
-				fmt.Println("current level Same Slice:", popNode.Same)
+				log.Println("current level Same Slice:", popNode.Same)
 				queue = append(queue, popNode.Right)
 			}
 			queue = queue[1:]
-			fmt.Printf("current level BST: %s  \n", popNodeVal)
+			log.Printf("current level BST: %s  \n", popNodeVal)
 		}
 		level++
-		fmt.Println("....")
+		log.Println("....")
 	}
 
 }
@@ -339,8 +339,8 @@ func (d *Bst) removeOneEntryHelper(node *Node, date int, venue, movie string) (*
 		var tempNode *Node
 		for i := range node.Same {
 			// fmt.Println("hit", node.Same[i], date, movie, venue, i)
-			// fmt.Println("wocao", node.Same[i].Movie, movie, node.Same[i].Movie == movie, i)
-			// fmt.Println("wocao", node.Same[i].Venue, venue, node.Same[i].Venue == venue, i)
+			// fmt.Println("hit", node.Same[i].Movie, movie, node.Same[i].Movie == movie, i)
+			// fmt.Println("hit", node.Same[i].Venue, venue, node.Same[i].Venue == venue, i)
 			if node.Same[i].Movie == movie && node.Same[i].Venue == venue {
 				// fmt.Println("hit", node.Same[i], date, movie, venue, i)
 				//check if the node to be removed is the first node in the slice
@@ -408,6 +408,175 @@ func (d *Bst) removeOneEntryHelper(node *Node, date int, venue, movie string) (*
 		node.Left = n
 	}
 	return node, nil
+}
+
+// over time using this BST to save date hour will likely encounter a lot of new
+// nodes being added, which can cause the tree to be unbalanced, (with more recent nodes being the right side)
+// so ideally we should to balance the tree after every insert/modify operation
+// or we expose the api to the user, and let them balance the tree themselves or through some cron job to call api
+// this depends on the frequency of query vs the frequency of insert/modify
+
+// before balance
+// level 0:
+// current level Same Slice: [2022041810 North Spderman 2022041810 DownTown CaptainAmerica 2022041810 South GolangMovie]
+// current level BST: 2022041810 North Spderman
+// ....
+// level 1:
+// current level Same Slice: [2022041710 South IronMan 2022041710 East IronMan]
+// current level BST: 2022041710 South IronMan
+// current level Same Slice: [2022041910 East Avenger]
+// current level BST: 2022041910 East Avenger
+// ....
+// level 2:
+// current level BST: 0
+// current level BST: 0
+// current level BST: 0
+// current level Same Slice: [2022042010 DownTown CaptainAmerica]
+// current level BST: 2022042010 DownTown CaptainAmerica
+// ....
+// level 3:
+// current level BST: 0
+// current level Same Slice: [2022042110 DownTown CaptainAmerica]
+// current level BST: 2022042110 DownTown CaptainAmerica
+// ....
+// level 4:
+// current level BST: 0
+// current level Same Slice: [2022042210 DownTown CaptainAmerica]
+// current level BST: 2022042210 DownTown CaptainAmerica
+// ....
+// level 5:
+// current level BST: 0
+// current level Same Slice: [2022042310 DownTown CaptainAmerica]
+// current level BST: 2022042310 DownTown CaptainAmerica
+// ....
+// level 6:
+// current level BST: 0
+// current level Same Slice: [2022042410 DownTown CaptainAmerica]
+// current level BST: 2022042410 DownTown CaptainAmerica
+// ....
+// level 7:
+// current level BST: 0
+// current level Same Slice: [2022042510 DownTown CaptainAmerica]
+// current level BST: 2022042510 DownTown CaptainAmerica
+// ....
+// level 8:
+// current level BST: 0
+// current level Same Slice: [2022042610 DownTown CaptainAmerica]
+// current level BST: 2022042610 DownTown CaptainAmerica
+// ....
+// level 9:
+// current level BST: 0
+// current level Same Slice: [2022042710 DownTown CaptainAmerica]
+// current level BST: 2022042710 DownTown CaptainAmerica
+// ....
+// level 10:
+// current level BST: 0
+// current level Same Slice: [2022042810 DownTown CaptainAmerica]
+// current level BST: 2022042810 DownTown CaptainAmerica
+// ....
+// level 11:
+// current level BST: 0
+// current level Same Slice: [2022042910 DownTown CaptainAmerica]
+// current level BST: 2022042910 DownTown CaptainAmerica
+// ....
+// level 12:
+// current level BST: 0
+// current level BST: 0
+// ....
+
+// after balance
+// level 0:
+// current level Same Slice: [2022042310 DownTown CaptainAmerica]
+// current level BST: 2022042310 DownTown CaptainAmerica
+// ....
+// level 1:
+// current level Same Slice: [2022041910 East Avenger]
+// current level BST: 2022041910 East Avenger
+// current level Same Slice: [2022042610 DownTown CaptainAmerica]
+// current level BST: 2022042610 DownTown CaptainAmerica
+// ....
+// level 2:
+// current level Same Slice: [2022041710 South IronMan 2022041710 East IronMan]
+// current level BST: 2022041710 South IronMan
+// current level Same Slice: [2022042110 DownTown CaptainAmerica]
+// current level BST: 2022042110 DownTown CaptainAmerica
+// current level Same Slice: [2022042410 DownTown CaptainAmerica]
+// current level BST: 2022042410 DownTown CaptainAmerica
+// current level Same Slice: [2022042810 DownTown CaptainAmerica]
+// current level BST: 2022042810 DownTown CaptainAmerica
+// ....
+// level 3:
+// current level BST: 0
+// current level Same Slice: [2022041810 North Spderman 2022041810 DownTown CaptainAmerica 2022041810 South GolangMovie]
+// current level BST: 2022041810 North Spderman
+// current level Same Slice: [2022042010 DownTown CaptainAmerica]
+// current level BST: 2022042010 DownTown CaptainAmerica
+// current level Same Slice: [2022042210 DownTown CaptainAmerica]
+// current level BST: 2022042210 DownTown CaptainAmerica
+// current level BST: 0
+// current level Same Slice: [2022042510 DownTown CaptainAmerica]
+// current level BST: 2022042510 DownTown CaptainAmerica
+// current level Same Slice: [2022042710 DownTown CaptainAmerica]
+// current level BST: 2022042710 DownTown CaptainAmerica
+// current level Same Slice: [2022042910 DownTown CaptainAmerica]
+// current level BST: 2022042910 DownTown CaptainAmerica
+// ....
+// level 4:
+// current level BST: 0
+// current level BST: 0
+// current level BST: 0
+// current level BST: 0
+// current level BST: 0
+// current level BST: 0
+// current level BST: 0
+// current level BST: 0
+// current level BST: 0
+// current level BST: 0
+// current level BST: 0
+// current level BST: 0
+// ....
+
+func (d *Bst) BalanceTree() {
+	// first let's get in order of the tree and put in a slice
+	var hold []Node
+	d.balanceTreeInOrder(d.Root, &hold)
+
+	// fmt.Println(hold)
+	// now we can build the tree from the slice
+
+	newBSTRoot := d.buildTree(hold, 0, len(hold)-1)
+	*d = newBSTRoot
+}
+
+func (d *Bst) balanceTreeInOrder(root *Node, h *[]Node) {
+	if root == nil {
+		return
+	}
+
+	d.balanceTreeInOrder(root.Left, h)
+	*h = append(*h, Node{Schedule: root.Schedule, Left: nil, Right: nil, Same: root.Same})
+	d.balanceTreeInOrder(root.Right, h)
+
+}
+
+func (d *Bst) buildTree(hold []Node, start, end int) Bst {
+	var b Bst
+	b.Root = buildTreeHelper(hold, start, end)
+	b.Length = len(hold)
+	return b
+}
+
+func buildTreeHelper(hold []Node, start, end int) *Node {
+	if start > end {
+		return nil
+	}
+
+	mid := (start + end) / 2
+
+	t := hold[mid]
+	t.Left = buildTreeHelper(hold, start, mid-1)
+	t.Right = buildTreeHelper(hold, mid+1, end)
+	return &t
 }
 
 // func (n *NodeList) SubModifyByVenue(oldVenue, newVenue string) {
